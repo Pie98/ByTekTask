@@ -24,13 +24,9 @@ class CircuitBreaker:
 
     def __init__(self, failure_threshold: int = 5, recovery_timeout: int = 60):
         """
-        Inizializza il Circuit Breaker.
-
         Args:
             failure_threshold (int): Numero di fallimenti consecutivi prima di aprire il circuito.
-                                   Default: 5
             recovery_timeout (int): Tempo in secondi prima di tentare il recupero.
-                                  Default: 60
         """
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout

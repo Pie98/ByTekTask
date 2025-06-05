@@ -116,7 +116,8 @@ class EcommerceSyntheticDataGenerator:
             },
         }
 
-        # Pesi per la variabile target
+        # Pesi per la variabile target. Invece di essere pesi singoli si crea un range di peso che per ogni osservazione
+        # verrà randomizzato, così da inserire un rumore più realistico rispetto ad un peso deterministico fissato.
         self.feature_weight_ranges = {
             'frequenza_visita_30gg': (0.75, 0.95),
             'valore_medio_carrello': (0.80, 1.00),
@@ -277,7 +278,7 @@ class EcommerceSyntheticDataGenerator:
         else:
             return will_purchase, probabilities
 
-    def generate_dataset(self, n_samples=1000, output_format='json'):
+    def generate_dataset(self, n_samples=1000):
         """
         Genera il dataset completo
 
@@ -306,45 +307,24 @@ class EcommerceSyntheticDataGenerator:
         print(f"Dataset generato con successo!")
         print(f"Distribuzione target: {np.sum(target)} acquisti su {n_samples} utenti ({np.mean(target):.2%})")
 
-        if output_format == 'json':
-            # Formato JSON richiesto
-            json_data = []
-            for i, user_id in enumerate(user_ids):
-                user_data = {
-                    'user_id': user_id,
-                    'features': {
-                        feature: float(features_df.iloc[i][feature])
-                        for feature in features_df.columns if feature not in ['target', 'purchase_probability']
-                    },
-                    'target': int(target[i])
-                }
-                json_data.append(user_data)
-            return json_data
+        # JSON
+        json_data = []
+        for i, user_id in enumerate(user_ids):
+            user_data = {
+                'user_id': user_id,
+                'features': {
+                    feature: float(features_df.iloc[i][feature])
+                    for feature in features_df.columns if feature not in ['target', 'purchase_probability']
+                },
+                'target': int(target[i])
+            }
+            json_data.append(user_data)
 
-        elif output_format == 'dataframe':
-            features_df['user_id'] = user_ids
-            return features_df
+        # DataFrame
+        df = features_df.copy()
+        df['user_id'] = user_ids
 
-        elif output_format == 'both':
-
-            # JSON
-            json_data = []
-            for i, user_id in enumerate(user_ids):
-                user_data = {
-                    'user_id': user_id,
-                    'features': {
-                        feature: float(features_df.iloc[i][feature])
-                        for feature in features_df.columns if feature not in ['target', 'purchase_probability']
-                    },
-                    'target': int(target[i])
-                }
-                json_data.append(user_data)
-
-            # DataFrame
-            df = features_df.copy()
-            df['user_id'] = user_ids
-
-            return {'dataframe': df, 'json': json_data}
+        return {'dataframe': df, 'json': json_data}
 
     @staticmethod
     def save_dataset(dataset, filename, format_type='json'):
@@ -369,19 +349,15 @@ class EcommerceSyntheticDataGenerator:
                 print("Per salvare in CSV, il dataset deve essere un DataFrame")
 
 
-# Esempio di utilizzo
 if __name__ == "__main__":
-    # Inizializza il generatore
     generator = EcommerceSyntheticDataGenerator(seed=42)
 
-    # Genera in formato JSON
     print("\n GENERAZIONE DATASET ")
     n_samples = 100000
-    dataset = generator.generate_dataset(n_samples, output_format='both')
+    dataset = generator.generate_dataset(n_samples)
     json_dataset = dataset['json']
     df_dataset = dataset['dataframe']
 
-    # Salva i dataset
     generator.save_dataset(json_dataset, 'data/ecommerce_synthetic_data.json', 'json')
     generator.save_dataset(df_dataset, 'data/ecommerce_synthetic_data.csv', 'csv')
 

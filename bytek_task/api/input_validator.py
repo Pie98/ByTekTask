@@ -172,7 +172,6 @@ class APIRequest(BaseModel):
         return v.strip()
 
 
-# Classe per gestire la validazione con messaggi dettagliati
 class FeatureValidationService:
     """Servizio per la validazione delle features con gestione errori avanzata"""
 

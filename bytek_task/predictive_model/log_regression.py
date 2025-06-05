@@ -32,7 +32,7 @@ def load_and_clean_data(filepath):
 
 def balance_data(df):
     """
-    Perform under-sampling on the majority class to balance the dataset.
+    Perform under-sampling on the majority target class to balance the dataset.
 
     Parameters:
     ----------

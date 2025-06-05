@@ -212,8 +212,22 @@ async def predict_propensity_endpoint(
             status_code=408,
             detail="Request timeout. The operation took too long to complete."
         )
-    except HTTPException:
-        raise
+    except HTTPException as http_exception:
+        if http_exception.status_code == 503:
+            raise HTTPException(
+                status_code=http_exception.status_code,
+                detail="Service temporarily unavailable"
+            )
+        if http_exception.status_code == 429:
+            raise HTTPException(
+                status_code=http_exception.status_code,
+                detail="Rate limit exceeded. Too many requests."
+            )
+        else:
+            raise HTTPException(
+                status_code=http_exception.status_code,
+                detail=f"Http exception: {http_exception}"
+            )
     except Exception as e:
         logger.error(f"Internal error processing request for user {request.user_id}: {str(e)}")
         raise HTTPException(
@@ -237,39 +251,4 @@ async def readiness_check():
         status="ready",
         model_loaded=True,
         timestamp=time.time()
-    )
-
-
-@app.exception_handler(422)
-async def validation_exception_handler(request: Request, exc):
-    return JSONResponse(
-        status_code=422,
-        content={
-            "error": "Validation Error",
-            "message": "The provided input is not valid",
-            "details": str(exc)
-        }
-    )
-
-
-@app.exception_handler(500)
-async def internal_server_error_handler(request: Request, exc):
-    logger.error(f"Internal server error: {str(exc)}")
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error": "Internal Server Error",
-            "message": "An unexpected error occurred while processing your request"
-        }
-    )
-
-
-@app.exception_handler(503)
-async def service_unavailable_handler(request: Request, exc):
-    return JSONResponse(
-        status_code=503,
-        content={
-            "error": "Service Unavailable",
-            "message": "The service is temporarily unavailable due to high load"
-        }
     )

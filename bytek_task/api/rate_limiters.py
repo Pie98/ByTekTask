@@ -7,7 +7,7 @@ import time
 class RateLimiter:
     """
     Implementazione di un rate limiter basato su sliding window per limitare
-    il numero di richieste per IP client.
+    il numero di richieste per IP client e il numero di chiamate totali.
 
     Attributes:
         max_requests (int): Numero massimo di richieste permesse nella finestra temporale
@@ -17,13 +17,9 @@ class RateLimiter:
 
     def __init__(self, max_requests: int = 10, window_seconds: int = 1):
         """
-        Inizializza il Rate Limiter.
-
         Args:
             max_requests (int): Numero massimo di richieste permesse nella finestra.
-                              Default: 60
             window_seconds (int): Dimensione della finestra temporale in secondi.
-                                Default: 60
         """
         self.max_requests = max_requests
         self.window_seconds = window_seconds
@@ -85,7 +81,7 @@ rate_limiter = RateLimiter()
 
 async def check_rate_limit(request: Request):
     """
-    Dependency function per verificare il rate limiting per IP client.
+    Dependency function per verificare il rate limiting per IP client e globale.
 
     Controlla se il client ha superato il limite di richieste permesse
     nella finestra temporale configurata.
