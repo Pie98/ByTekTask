@@ -15,7 +15,7 @@ class RateLimiter:
         requests (defaultdict): Dizionario che traccia le richieste per ogni IP
     """
 
-    def __init__(self, max_requests: int = 60, window_seconds: int = 60):
+    def __init__(self, max_requests: int = 10, window_seconds: int = 1):
         """
         Inizializza il Rate Limiter.
 
