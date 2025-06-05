@@ -8,9 +8,9 @@ import time
 import logging
 import joblib
 import pandas as pd
-from .circuit_breakers import circuit_breaker
-from .rate_limiters import check_rate_limit
-from .input_validator import FeatureValidationService
+from bytek_task.api.circuit_breakers import circuit_breaker
+from bytek_task.api.rate_limiters import check_rate_limit
+from bytek_task.api.input_validator import FeatureValidationService
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -50,31 +50,43 @@ class ReadinessResponse(BaseModel):
     timestamp: float
 
 
+def preprocess_features(features: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Preprocessa le features limitando quelle che eccedono il soft_max
+    """
+
+    soft_max_limits = {
+        'frequenza_visita_30gg': 200,
+        'valore_medio_carrello': 10000.0,
+        'numero_acquisti_precedenti': 1000,
+        'prodotti_visualizzati': 1000,
+        'interazioni_servizio_clienti': 100,
+        'numero_resi': 50,
+        'categorie_esplorate': 100,
+        'valore_lifetime': 100000.0,
+        'numero_dispositivi': 20
+    }
+
+    processed_features = features.copy()
+
+    for feature_name, soft_max_value in soft_max_limits.items():
+        original_value = processed_features[feature_name]
+        if original_value > soft_max_value:
+            processed_features[feature_name] = soft_max_value
+            print(f"Feature '{feature_name}' limitata da {original_value} a {soft_max_value}")
+
+    return processed_features
+
+
 async def predict_propensity(features: Dict[str, Any]) -> float:
-    """
-    Simula la predizione del modello ML per calcolare la propensione dell'utente.
+    processed_features = preprocess_features(features)
 
-    Questa funzione simula l'inferenza di un modello di machine learning.
-    In un ambiente di produzione, qui verrebbe caricato e utilizzato il modello reale.
-
-    Args:
-        features (Dict[str, Any]): Dizionario contenente le features dell'utente
-                                 per la predizione
-
-    Returns:
-        float: Valore di propensione predetto, compreso tra 0.0 e 1.0
-
-    Note:
-        - Aggiunge una latenza simulata di 0.1 secondi
-        - Calcola una propensione basata sulla media delle features
-        - Il risultato è limitato all'intervallo [0.0, 1.0]
-    """
     # Simula un po' di latenza del modello
     feature_order = ['tempo_ultimo_acquisto', 'frequenza_visita_30gg', 'valore_medio_carrello',
                       'numero_acquisti_precedenti', 'tempo_permanenza_sito', 'percentuale_abbandono_carrello',
                       'prodotti_visualizzati', 'interazioni_servizio_clienti', 'numero_resi', 'categorie_esplorate',
                       'valore_lifetime', 'orario_preferenziale', 'tasso_apertura_email', 'numero_dispositivi']
-    X_new = pd.DataFrame([features])[feature_order]
+    X_new = pd.DataFrame([processed_features])[feature_order]
     propensity = predictive_model.predict_proba(X_new)[0][1]
 
     return float(round(propensity, 2))
@@ -158,9 +170,9 @@ async def predict_propensity_endpoint(
             )
 
             if not is_valid:
-                raise HTTPException(
+                return JSONResponse(
                     status_code=422,
-                    detail={
+                    content={
                         "message": "Validation failed",
                         "errors": errors,
                         "warnings": warnings

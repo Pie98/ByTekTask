@@ -158,25 +158,6 @@ class Features(BaseModel):
     tasso_apertura_email: Optional[float] = Field(None, description="Tasso apertura email")
     numero_dispositivi: Optional[float] = Field(None, description="Numero dispositivi")
 
-    @field_validator('*', mode='before')
-    @classmethod
-    def validate_all_features(cls, v, info):
-        """Field validator universale per tutte le features"""
-        if v is None:
-            return v
-
-        validator_instance = FeatureValidator()
-        is_valid, error_msg, warning_msg = validator_instance.validate_feature(info.field_name, v)
-
-        if not is_valid:
-            raise ValueError(error_msg)
-
-        # Per ora ignoriamo i warning, ma potrebbero essere loggati
-        if warning_msg:
-            print(f"WARNING: {warning_msg}")
-
-        return v
-
 
 class APIRequest(BaseModel):
     """Modello principale per la richiesta API"""
@@ -205,7 +186,6 @@ class FeatureValidationService:
         """
         errors = []
         warnings = []
-        validated_data = None
 
         try:
             # Validazione con Pydantic che la struttura del payload rispetti quella attesa
@@ -214,6 +194,9 @@ class FeatureValidationService:
             # Validazione aggiuntiva delle features
             if validated_data.features:
                 feature_data = validated_data.features.model_dump(exclude_none=True)
+                for feature in list(self.validator.validation_rules.keys()):
+                    if feature not in feature_data:
+                        errors.append(f"Feature missing from input: {feature}")
 
                 for feature_name, value in feature_data.items():
                     is_valid, error_msg, warning_msg = self.validator.validate_feature(feature_name, value)
@@ -226,7 +209,6 @@ class FeatureValidationService:
             return len(errors) == 0, validated_data, errors, warnings
 
         except ValidationError as e:
-            # Estrae errori da Pydantic
             for error in e.errors():
                 field_path = " -> ".join(str(x) for x in error['loc'])
                 errors.append(f"Campo '{field_path}': {error['msg']}")
