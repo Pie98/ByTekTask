@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import Dict, Any
@@ -10,7 +10,7 @@ import joblib
 import pandas as pd
 from bytek_task.api.circuit_breakers import circuit_breaker
 from bytek_task.api.rate_limiters import check_rate_limit
-from bytek_task.api.input_validator import FeatureValidationService
+from bytek_task.api.input_validator import FeatureValidationService, Features
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ predictive_model = joblib.load(model_path)
 
 class PropensityRequest(BaseModel):
     user_id: str
-    features: Dict[str, float]
+    features: Features
 
 
 class PropensityResponse(BaseModel):
@@ -102,7 +102,6 @@ app = FastAPI(
 @app.post("/predict-propensity", response_model=PropensityResponse)
 async def predict_propensity_endpoint(
         request: PropensityRequest,
-        req: Request,
         _: None = Depends(check_rate_limit)
 ):
     """
@@ -114,7 +113,6 @@ async def predict_propensity_endpoint(
 
     Args:
         request (PropensityRequest): Dati dell'utente e features per la predizione
-        req (Request): Oggetto request di FastAPI (per rate limiting)
         _ (None): Dependency per il controllo del rate limit
 
     Returns:
