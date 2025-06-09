@@ -119,18 +119,18 @@ async def predict_propensity_endpoint(
         PropensityResponse: Oggetto contenente user_id e propensione predetta
 
     Raises:
-        HTTPException 422: Se la validazione dei dati fallisce
-        HTTPException 408: Se la richiesta supera il timeout (30 secondi)
-        HTTPException 429: Se il rate limit è superato
-        HTTPException 503: Se il circuit breaker è aperto
-        HTTPException 500: Per errori interni del server
+        HTTPException 422: Se la validazione dei dati fallisce\n
+        HTTPException 408: Se la richiesta supera il timeout (30 secondi)\n
+        HTTPException 429: Se il rate limit è superato\n
+        HTTPException 503: Se il circuit breaker è aperto\n
+        HTTPException 500: Per errori interni del server\n
 
-    Example:
+    Example:\n
         ```
         POST /predict-propensity
           {
-            "user_id": "user_f8b7c861",
-            "features": {
+            "user_id": "user_f8b7c861",\n
+            "features": {\n
               "tempo_ultimo_acquisto": 38.51593502067873,
               "frequenza_visita_30gg": 71.0,
               "valore_medio_carrello": 44.86634368525073,
@@ -144,7 +144,7 @@ async def predict_propensity_endpoint(
               "valore_lifetime": 287.77539647619284,
               "orario_preferenziale": 10.203915755795173,
               "tasso_apertura_email": 0.6007745530830877,
-              "numero_dispositivi": 3.0
+              "numero_dispositivi": 3.0\n
             }
           }
         ```
