@@ -132,7 +132,7 @@ async def predict_propensity_endpoint(
             "user_id": "user_f8b7c861",\n
             "features": {\n
               "tempo_ultimo_acquisto": 38.51593502067873,
-              "frequenza_visita_30gg": 71.0,
+              "frequenza_visita_30gg": 141.0,
               "valore_medio_carrello": 44.86634368525073,
               "numero_acquisti_precedenti": 108.0,
               "tempo_permanenza_sito": 18.47988348990493,
@@ -153,7 +153,7 @@ async def predict_propensity_endpoint(
         ```
         {
             "user_id": "user123",
-            "propensity": 0.98
+            "propensity": 0.41
         }
         ```
     """
@@ -184,7 +184,7 @@ async def predict_propensity_endpoint(
             # Predizione usando il circuit breaker per resilienza
             def predict_sync():
                 return asyncio.create_task(
-                    predict_propensity(request.features)
+                    predict_propensity(dict(request.features))
                 )
 
             prediction_task = circuit_breaker.call(predict_sync)
@@ -230,7 +230,7 @@ async def predict_propensity_endpoint(
         logger.error(f"Internal error processing request for user {request.user_id}: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail="Internal server error occurred while processing the request."
+            detail=f"Internal server error occurred while processing the request: {e}"
         )
 
 
