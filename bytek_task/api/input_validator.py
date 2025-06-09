@@ -139,24 +139,24 @@ class Features(BaseModel):
     """Modello per le features con validazione dinamica"""
 
     model_config = ConfigDict(
-        extra="forbid",  # Non permette campi extra
+        extra="forbid",
         validate_assignment=True
     )
 
-    tempo_ultimo_acquisto: Optional[float] = Field(None, description="Giorni dall'ultimo acquisto")
-    frequenza_visita_30gg: Optional[float] = Field(None, description="Visite negli ultimi 30 giorni")
-    valore_medio_carrello: Optional[float] = Field(None, description="Valore medio carrello in euro")
-    numero_acquisti_precedenti: Optional[float] = Field(None, description="Numero acquisti precedenti")
-    tempo_permanenza_sito: Optional[float] = Field(None, description="Tempo permanenza in minuti")
-    percentuale_abbandono_carrello: Optional[float] = Field(None, description="Percentuale abbandono carrello")
-    prodotti_visualizzati: Optional[float] = Field(None, description="Prodotti visualizzati")
-    interazioni_servizio_clienti: Optional[float] = Field(None, description="Interazioni servizio clienti")
-    numero_resi: Optional[float] = Field(None, description="Numero resi")
-    categorie_esplorate: Optional[float] = Field(None, description="Categorie esplorate")
-    valore_lifetime: Optional[float] = Field(None, description="Valore lifetime in euro")
-    orario_preferenziale: Optional[float] = Field(None, description="Orario preferenziale")
-    tasso_apertura_email: Optional[float] = Field(None, description="Tasso apertura email")
-    numero_dispositivi: Optional[float] = Field(None, description="Numero dispositivi")
+    tempo_ultimo_acquisto: float = Field(..., description="Giorni dall'ultimo acquisto")
+    frequenza_visita_30gg: float = Field(..., description="Visite negli ultimi 30 giorni")
+    valore_medio_carrello: float = Field(..., description="Valore medio carrello in euro")
+    numero_acquisti_precedenti: float = Field(..., description="Numero acquisti precedenti")
+    tempo_permanenza_sito: float = Field(..., description="Tempo permanenza in minuti")
+    percentuale_abbandono_carrello: float = Field(..., description="Percentuale abbandono carrello")
+    prodotti_visualizzati: float = Field(..., description="Prodotti visualizzati")
+    interazioni_servizio_clienti: float = Field(..., description="Interazioni servizio clienti")
+    numero_resi: float = Field(..., description="Numero resi")
+    categorie_esplorate: float = Field(..., description="Categorie esplorate")
+    valore_lifetime: float = Field(..., description="Valore lifetime in euro")
+    orario_preferenziale: float = Field(..., description="Orario preferenziale")
+    tasso_apertura_email: float = Field(..., description="Tasso apertura email")
+    numero_dispositivi: float = Field(..., description="Numero dispositivi")
 
 
 class APIRequest(BaseModel):
@@ -178,7 +178,7 @@ class FeatureValidationService:
     def __init__(self):
         self.validator = FeatureValidator()
 
-    def validate_request(self, data: Dict[str, Any]) -> tuple[bool, APIRequest, list, list]:
+    def validate_request(self, data: Dict[str, Features]) -> tuple[bool, APIRequest, list, list]:
         """
         Valida una richiesta completa
         Returns: (is_valid, validated_data, errors, warnings)
@@ -187,25 +187,17 @@ class FeatureValidationService:
         warnings = []
 
         try:
-            # Validazione con Pydantic che la struttura del payload rispetti quella attesa
-            validated_data = APIRequest(**data)
+            feature_data = APIRequest(**data).features.model_dump(exclude_none=True)
 
-            # Validazione aggiuntiva delle features
-            if validated_data.features:
-                feature_data = validated_data.features.model_dump(exclude_none=True)
-                for feature in list(self.validator.validation_rules.keys()):
-                    if feature not in feature_data:
-                        errors.append(f"Feature missing from input: {feature}")
+            for feature_name, value in feature_data.items():
+                is_valid, error_msg, warning_msg = self.validator.validate_feature(feature_name, value)
 
-                for feature_name, value in feature_data.items():
-                    is_valid, error_msg, warning_msg = self.validator.validate_feature(feature_name, value)
+                if error_msg:
+                    errors.append(error_msg)
+                if warning_msg:
+                    warnings.append(warning_msg)
 
-                    if error_msg:
-                        errors.append(error_msg)
-                    if warning_msg:
-                        warnings.append(warning_msg)
-
-            return len(errors) == 0, validated_data, errors, warnings
+            return len(errors) == 0, feature_data, errors, warnings
 
         except ValidationError as e:
             for error in e.errors():
